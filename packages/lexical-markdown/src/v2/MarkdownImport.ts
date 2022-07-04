@@ -28,6 +28,7 @@ import {
 } from 'lexical';
 
 import {PUNCTUATION_OR_SPACE, transformersByType} from './utils';
+import {MultilineTransformer} from './MarkdownTransformers';
 
 const MARKDOWN_EMPTY_LINE_REG_EXP = /^\s{0,3}$/;
 const CODE_BLOCK_REG_EXP = /^```(\w{1,10})?\s?$/;
@@ -57,7 +58,12 @@ export function createMarkdownImport(
       // is ignored for further processing
       // TODO:
       // Abstract it to be dynamic as other transformers (add multiline match option)
-      const [codeBlockNode, shiftedIndex] = importCodeBlock(lines, i, root);
+      const [codeBlockNode, shiftedIndex] = importMultilineBlocks(
+        lines,
+        root,
+        i,
+        byType.multiline,
+      );
 
       if (codeBlockNode != null) {
         i = shiftedIndex;
@@ -103,6 +109,8 @@ function importBlocks(
   rootNode.append(elementNode);
 
   for (const {regExp, replace} of elementTransformers) {
+    // Code block needs to be processed in here if possible
+
     const match = lineText.match(regExp);
 
     if (match) {
@@ -150,34 +158,81 @@ function importBlocks(
   }
 }
 
-function importCodeBlock(
+function importMultilineBlocks(
   lines: Array<string>,
-  startLineIndex: number,
   rootNode: RootNode,
-): [CodeNode | null, number] {
-  const openMatch = lines[startLineIndex].match(CODE_BLOCK_REG_EXP);
+  startLineIndex: number,
+  transformers: Array<MultilineTransformer>,
+): [LexicalNode | null, number] {
+  for (const {startRegExp, endRegExp, replace} of transformers) {
+    // check if the block could be opening
+    const openMatch = lines[startLineIndex].match(startRegExp);
+    if (openMatch) {
+      let endLineIndex = startLineIndex;
+      const linesLength = lines.length;
 
-  if (openMatch) {
-    let endLineIndex = startLineIndex;
-    const linesLength = lines.length;
+      while (++endLineIndex < linesLength) {
+        const closeMatch = lines[endLineIndex].match(endRegExp);
 
-    while (++endLineIndex < linesLength) {
-      const closeMatch = lines[endLineIndex].match(CODE_BLOCK_REG_EXP);
+        if (closeMatch) {
+          const matchingLines = lines.slice(startLineIndex, endLineIndex);
+          const match = matchingLines.join('\n');
 
-      if (closeMatch) {
-        const codeBlockNode = $createCodeNode(openMatch[1]);
-        const textNode = $createTextNode(
-          lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
-        );
-        codeBlockNode.append(textNode);
-        rootNode.append(codeBlockNode);
-        return [codeBlockNode, endLineIndex];
+          const textNode = $createTextNode(match);
+          // eslint-disable-next-line no-shadow
+          const elementNode = $createParagraphNode();
+          elementNode.append(textNode);
+          rootNode.append(elementNode);
+
+          replace(elementNode, [textNode], match, true);
+          return [elementNode, endLineIndex];
+
+          // const codeBlockNode = $createCodeNode(openMatch[1]);
+          // const textNode = $createTextNode(
+          //   lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
+          // );
+          // codeBlockNode.append(textNode);
+          // rootNode.append(codeBlockNode);
+          // return [codeBlockNode, endLineIndex];
+        }
       }
     }
   }
-
   return [null, startLineIndex];
 }
+
+// TODO: open up a new transformer like this
+// TODO: startRegExp
+//
+
+// function importCodeBlock(
+//   lines: Array<string>,
+//   startLineIndex: number,
+//   rootNode: RootNode,
+// ): [CodeNode | null, number] {
+//   const openMatch = lines[startLineIndex].match(CODE_BLOCK_REG_EXP);
+
+//   if (openMatch) {
+//     let endLineIndex = startLineIndex;
+//     const linesLength = lines.length;
+
+//     while (++endLineIndex < linesLength) {
+//       const closeMatch = lines[endLineIndex].match(CODE_BLOCK_REG_EXP);
+
+//       if (closeMatch) {
+//         const codeBlockNode = $createCodeNode(openMatch[1]);
+//         const textNode = $createTextNode(
+//           lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
+//         );
+//         codeBlockNode.append(textNode);
+//         rootNode.append(codeBlockNode);
+//         return [codeBlockNode, endLineIndex];
+//       }
+//     }
+//   }
+
+//   return [null, startLineIndex];
+// }
 
 // Processing text content and replaces text format tags.
 // It takes outermost tag match and its content, creates text node with

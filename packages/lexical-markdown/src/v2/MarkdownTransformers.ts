@@ -29,7 +29,25 @@ import {$createLineBreakNode, $createTextNode, $isTextNode} from 'lexical';
 export type Transformer =
   | ElementTransformer
   | TextFormatTransformer
-  | TextMatchTransformer;
+  | TextMatchTransformer
+  | MultilineTransformer;
+
+export type MultilineTransformer = {
+  export: (
+    node: LexicalNode,
+    // eslint-disable-next-line no-shadow
+    traverseChildren: (node: ElementNode) => string,
+  ) => string | null;
+  startRegExp: RegExp;
+  endRegExp: RegExp;
+  replace: (
+    parentNode: ElementNode,
+    children: Array<LexicalNode>,
+    match: string,
+    isImport: boolean,
+  ) => void;
+  type: 'multiline-element';
+};
 
 export type ElementTransformer = {
   export: (

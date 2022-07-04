@@ -11,6 +11,7 @@ import type {
   TextFormatTransformer,
   TextMatchTransformer,
   Transformer,
+  MultilineTransformer,
 } from '@lexical/markdown';
 
 export function indexBy<T>(
@@ -36,11 +37,13 @@ export function transformersByType(transformers: Array<Transformer>): Readonly<{
   element: Array<ElementTransformer>;
   textFormat: Array<TextFormatTransformer>;
   textMatch: Array<TextMatchTransformer>;
+  multiline: Array<MultilineTransformer>;
 }> {
   const byType = indexBy(transformers, (t) => t.type);
 
   return {
     element: byType.element as Array<ElementTransformer>,
+    multiline: byType['multiline-element'] as Array<MultilineTransformer>,
     textFormat: byType['text-format'] as Array<TextFormatTransformer>,
     textMatch: byType['text-match'] as Array<TextMatchTransformer>,
   };

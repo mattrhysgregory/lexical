@@ -11,6 +11,7 @@ import type {
   TextFormatTransformer,
   TextMatchTransformer,
   Transformer,
+  MultilineTransformer,
 } from './v2/MarkdownTransformers';
 
 import {createMarkdownExport} from './v2/MarkdownExport';
@@ -107,4 +108,5 @@ export {
   Transformer,
   TRANSFORMERS,
   UNORDERED_LIST,
+  MultilineTransformer,
 };
