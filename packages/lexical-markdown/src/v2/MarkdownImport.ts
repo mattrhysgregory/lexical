@@ -6,7 +6,6 @@
  *
  */
 
-import type {CodeNode} from '@lexical/code';
 import type {
   ElementTransformer,
   TextFormatTransformer,
@@ -15,7 +14,6 @@ import type {
 } from '@lexical/markdown';
 import type {LexicalNode, RootNode, TextNode} from 'lexical';
 
-import {$createCodeNode} from '@lexical/code';
 import {$isListItemNode, $isListNode} from '@lexical/list';
 import {$isQuoteNode} from '@lexical/rich-text';
 import {$findMatchingParent} from '@lexical/utils';
@@ -27,11 +25,10 @@ import {
   $isParagraphNode,
 } from 'lexical';
 
-import {PUNCTUATION_OR_SPACE, transformersByType} from './utils';
 import {MultilineTransformer} from './MarkdownTransformers';
+import {PUNCTUATION_OR_SPACE, transformersByType} from './utils';
 
 const MARKDOWN_EMPTY_LINE_REG_EXP = /^\s{0,3}$/;
-const CODE_BLOCK_REG_EXP = /^```(\w{1,10})?\s?$/;
 type TextFormatTransformersIndex = Readonly<{
   fullMatchRegExpByTag: Readonly<Record<string, RegExp>>;
   openTagsRegExp: RegExp;
@@ -41,7 +38,12 @@ type TextFormatTransformersIndex = Readonly<{
 export function createMarkdownImport(
   transformers: Array<Transformer>,
 ): (markdownString: string) => void {
+  console.log(transformers.length, 'transformers available for use');
+
   const byType = transformersByType(transformers);
+
+  console.log(byType);
+
   const textFormatTransformersIndex = createTextFormatTransformersIndex(
     byType.textFormat,
   );
@@ -58,14 +60,14 @@ export function createMarkdownImport(
       // is ignored for further processing
       // TODO:
       // Abstract it to be dynamic as other transformers (add multiline match option)
-      const [codeBlockNode, shiftedIndex] = importMultilineBlocks(
+      const [multiLineBlock, shiftedIndex] = importMultilineBlocks(
         lines,
         root,
         i,
         byType.multiline,
       );
 
-      if (codeBlockNode != null) {
+      if (multiLineBlock != null) {
         i = shiftedIndex;
         continue;
       }
@@ -164,6 +166,10 @@ function importMultilineBlocks(
   startLineIndex: number,
   transformers: Array<MultilineTransformer>,
 ): [LexicalNode | null, number] {
+  if (!transformers) {
+    return [null, startLineIndex];
+  }
+
   for (const {startRegExp, endRegExp, replace} of transformers) {
     // check if the block could be opening
     const openMatch = lines[startLineIndex].match(startRegExp);
@@ -186,14 +192,6 @@ function importMultilineBlocks(
 
           replace(elementNode, [textNode], match, true);
           return [elementNode, endLineIndex];
-
-          // const codeBlockNode = $createCodeNode(openMatch[1]);
-          // const textNode = $createTextNode(
-          //   lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
-          // );
-          // codeBlockNode.append(textNode);
-          // rootNode.append(codeBlockNode);
-          // return [codeBlockNode, endLineIndex];
         }
       }
     }
@@ -220,11 +218,11 @@ function importMultilineBlocks(
 //       const closeMatch = lines[endLineIndex].match(CODE_BLOCK_REG_EXP);
 
 //       if (closeMatch) {
-//         const codeBlockNode = $createCodeNode(openMatch[1]);
-//         const textNode = $createTextNode(
-//           lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
-//         );
-//         codeBlockNode.append(textNode);
+// const codeBlockNode = $createCodeNode(openMatch[1]);
+// const textNode = $createTextNode(
+//   lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
+// );
+// codeBlockNode.append(textNode);
 //         rootNode.append(codeBlockNode);
 //         return [codeBlockNode, endLineIndex];
 //       }

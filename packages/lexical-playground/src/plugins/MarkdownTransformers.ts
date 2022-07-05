@@ -6,8 +6,9 @@
  *
  */
 
-import type {
+import {
   ElementTransformer,
+  MULTILINE_TRANSFORMERS,
   TextMatchTransformer,
   Transformer,
 } from '@lexical/markdown';
@@ -264,4 +265,5 @@ export const PLAYGROUND_TRANSFORMERS: Array<Transformer> = [
   ...ELEMENT_TRANSFORMERS,
   ...TEXT_FORMAT_TRANSFORMERS,
   ...TEXT_MATCH_TRANSFORMERS,
+  ...MULTILINE_TRANSFORMERS,
 ];

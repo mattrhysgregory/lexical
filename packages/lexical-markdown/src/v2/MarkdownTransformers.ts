@@ -213,7 +213,10 @@ export const QUOTE: ElementTransformer = {
   type: 'element',
 };
 
-export const CODE: ElementTransformer = {
+const CODE_BLOCK_REG_EXP = /^```(\w{1,10})?\s?$/;
+
+export const CODE: MultilineTransformer = {
+  endRegExp: CODE_BLOCK_REG_EXP,
   export: (node: LexicalNode) => {
     if (!$isCodeNode(node)) {
       return null;
@@ -227,11 +230,18 @@ export const CODE: ElementTransformer = {
       '```'
     );
   },
-  regExp: /^```(\w{1,10})?\s/,
-  replace: replaceWithBlock((match) => {
-    return $createCodeNode(match ? match[1] : undefined);
-  }),
-  type: 'element',
+  replace: (parent, children, multilineMatch) => {
+    const reg = new RegExp(/^```([\S]*?)\n([\s\S]*)/);
+    const match = multilineMatch.match(reg);
+    if (match) {
+      const codeNode = $createCodeNode(match[1]);
+      const textNode = $createTextNode(match[2]);
+      codeNode.append(textNode);
+      parent.replace(codeNode);
+    }
+  },
+  startRegExp: CODE_BLOCK_REG_EXP,
+  type: 'multiline-element',
 };
 
 export const UNORDERED_LIST: ElementTransformer = {

@@ -8,10 +8,10 @@
 
 import type {
   ElementTransformer,
+  MultilineTransformer,
   TextFormatTransformer,
   TextMatchTransformer,
   Transformer,
-  MultilineTransformer,
 } from './v2/MarkdownTransformers';
 
 import {createMarkdownExport} from './v2/MarkdownExport';
@@ -38,10 +38,11 @@ import {
 const ELEMENT_TRANSFORMERS: Array<ElementTransformer> = [
   HEADING,
   QUOTE,
-  CODE,
   UNORDERED_LIST,
   ORDERED_LIST,
 ];
+
+const MULTILINE_TRANSFORMERS: Array<MultilineTransformer> = [CODE];
 
 // Order of text format transformers matters:
 //
@@ -64,6 +65,7 @@ const TRANSFORMERS: Array<Transformer> = [
   ...ELEMENT_TRANSFORMERS,
   ...TEXT_FORMAT_TRANSFORMERS,
   ...TEXT_MATCH_TRANSFORMERS,
+  ...MULTILINE_TRANSFORMERS,
 ];
 
 function $convertFromMarkdownString(
@@ -97,6 +99,8 @@ export {
   ITALIC_STAR,
   ITALIC_UNDERSCORE,
   LINK,
+  MULTILINE_TRANSFORMERS,
+  MultilineTransformer,
   ORDERED_LIST,
   QUOTE,
   registerMarkdownShortcuts,
@@ -108,5 +112,4 @@ export {
   Transformer,
   TRANSFORMERS,
   UNORDERED_LIST,
-  MultilineTransformer,
 };

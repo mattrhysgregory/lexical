@@ -8,10 +8,10 @@
 
 import type {
   ElementTransformer,
+  MultilineTransformer,
   TextFormatTransformer,
   TextMatchTransformer,
   Transformer,
-  MultilineTransformer,
 } from '@lexical/markdown';
 
 export function indexBy<T>(
@@ -39,6 +39,8 @@ export function transformersByType(transformers: Array<Transformer>): Readonly<{
   textMatch: Array<TextMatchTransformer>;
   multiline: Array<MultilineTransformer>;
 }> {
+  console.log(transformers.map((t) => t.type));
+
   const byType = indexBy(transformers, (t) => t.type);
 
   return {
