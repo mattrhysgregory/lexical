@@ -50,7 +50,7 @@ export type ElementTransformer = {
     // eslint-disable-next-line no-shadow
     traverseChildren: (node: ElementNode) => string,
   ) => string | null;
-  regExp: RegExp;
+  regExp: RegExp | [RegExp, RegExp];
   replace: (
     parentNode: ElementNode,
     children: Array<LexicalNode>,
@@ -239,10 +239,12 @@ export const CODE: ElementTransformer = {
       '```'
     );
   },
-  regExp: /^```(\w{1,10})?\s/,
-  replace: createBlockNode((match) => {
-    return $createCodeNode(match ? match[1] : undefined);
-  }),
+  regExp: [/^```(\w{1,10})?\s?$/, /^```\s?$/],
+  replace: (fullCodeBlock) => {
+    const [, lang, code] = fullCodeBlock.match(/`{3}([\w]*)\n([\S\s]+?)\n`{3}/);
+
+    console.log(lang, code);
+  },
   type: 'element',
 };
 

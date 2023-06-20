@@ -13,7 +13,7 @@ import type {
   TextMatchTransformer,
   Transformer,
 } from '@lexical/markdown';
-import type {LexicalNode, TextNode} from 'lexical';
+import type {LexicalNode, RootNode, TextNode} from 'lexical';
 
 import {$createCodeNode} from '@lexical/code';
 import {$isListItemNode, $isListNode} from '@lexical/list';
@@ -34,7 +34,6 @@ import {IS_APPLE_WEBKIT, IS_IOS, IS_SAFARI} from 'shared/environment';
 import {PUNCTUATION_OR_SPACE, transformersByType} from './utils';
 
 const MARKDOWN_EMPTY_LINE_REG_EXP = /^\s{0,3}$/;
-const CODE_BLOCK_REG_EXP = /^```(\w{1,10})?\s?$/;
 type TextFormatTransformersIndex = Readonly<{
   fullMatchRegExpByTag: Readonly<Record<string, RegExp>>;
   openTagsRegExp: RegExp;
@@ -61,9 +60,20 @@ export function createMarkdownImport(
       // is ignored for further processing
       // TODO:
       // Abstract it to be dynamic as other transformers (add multiline match option)
-      const [codeBlockNode, shiftedIndex] = importCodeBlock(lines, i, root);
+      const multilineTransformers = transformers.filter((transformer) => {
+        return (
+          transformer.type === 'element' && Array.isArray(transformer.regExp)
+        );
+      });
 
-      if (codeBlockNode != null) {
+      const [multiLineNode, shiftedIndex] = importMultilineBlocks(
+        lines,
+        i,
+        root,
+        multilineTransformers,
+      );
+
+      if (multiLineNode != null) {
         i = shiftedIndex;
         continue;
       }
@@ -167,32 +177,37 @@ function importBlocks(
   }
 }
 
-function importCodeBlock(
+function importMultilineBlocks(
   lines: Array<string>,
   startLineIndex: number,
   rootNode: ElementNode,
-): [CodeNode | null, number] {
-  const openMatch = lines[startLineIndex].match(CODE_BLOCK_REG_EXP);
+  transformers: ElementTransformer[],
+): [ElementNode | null, number] {
+  for (const transformer of transformers) {
+    if (Array.isArray(transformer.regExp) === false) {
+      throw new Error();
+    }
 
-  if (openMatch) {
-    let endLineIndex = startLineIndex;
-    const linesLength = lines.length;
+    // TODO: discuss these types
 
-    while (++endLineIndex < linesLength) {
-      const closeMatch = lines[endLineIndex].match(CODE_BLOCK_REG_EXP);
+    const openMatch = lines[startLineIndex].match(transformer.regExp[0]);
 
-      if (closeMatch) {
-        const codeBlockNode = $createCodeNode(openMatch[1]);
-        const textNode = $createTextNode(
-          lines.slice(startLineIndex + 1, endLineIndex).join('\n'),
+    if (openMatch) {
+      let endLineIndex = startLineIndex;
+      const linesLength = lines.length;
+
+      while (++endLineIndex < linesLength) {
+        const closeMatch = lines[endLineIndex].match(
+          (transformer as any).regExp[1],
         );
-        codeBlockNode.append(textNode);
-        rootNode.append(codeBlockNode);
-        return [codeBlockNode, endLineIndex];
+
+        if (closeMatch) {
+          const text = lines.slice(startLineIndex, endLineIndex + 1).join('\n');
+          (transformer as any).replace(text);
+        }
       }
     }
   }
-
   return [null, startLineIndex];
 }
 
